@@ -1,0 +1,110 @@
+---
+title: "Impact of the severe weather events"
+author: "Alexander Klonov"
+date: "27 08 2020"
+output: html_document
+---
+
+## Synopsys
+
+Weather events have an effect on our everyday life. Storms, tornadoes, earthquakes and many others
+causes not only heavy property damage, but also serious injures and deaths. Preventing such outcomes to 
+the extent possible is a key concern.
+
+This project uses [U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database][1] as a primary source 
+of information. This database has some important info about major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage. More info can be found [here][2].
+
+Main questions to answer are:
+
+* Across the United States, which types of events  are most harmful with respect to population health?
+* Across the United States, which types of events have the greatest economic consequences?
+
+
+## Data Processing
+
+First of all, we need to download data, and, if necessarily, make some changes. [Raw data][3]. 
+
+```{r, cache = TRUE}
+filename<-"WeatherRepData.bz2"
+if(!file.exists(filename))
+    download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", filename)
+data<-read.csv(filename)
+```
+
+As all questions require us to gain information about different type of events, it would be better to split data, based on event - EVTYPE
+
+```{r}
+EVlist<-split(data, data$EVTYPE)
+
+```
+
+
+## Question 1: harmful to health
+
+This dataset has many variables - 37 to be exact.
+
+```{r}
+dim(data)
+names(data)
+```
+
+But to answer this question we'll be using only two  "fatalities" and "injuries".
+
+We can use these variables to split them by weather event, then we can use either "which.max" function to find the most harmful event, or sort them and print as many as we would like. Five events in each category will work fine.
+
+```{r}
+
+sort(sapply(split(data$INJURIES, data$EVTYPE), max), decreasing = TRUE)[1:5]
+sort(sapply(split(data$FATALITIES, data$EVTYPE), max), decreasing = TRUE)[1:5]
+
+```
+ 
+A graph showing most Injuries and most Fatal cases from different sources.
+
+```{r}
+library(ggplot2)
+library(ggpubr)
+
+x <- data.frame(ID=1:5,Injures=sort(sapply(split(data$INJURIES, data$EVTYPE), max), decreasing = TRUE)[1:5],
+                Fatal=sort(sapply(split(data$FATALITIES, data$EVTYPE), max), decreasing = TRUE)[1:5] )
+dp<-ggplot(data = x, aes(ID,Injures))+geom_line(col="blue")
+pd<-ggplot(data = x, aes(ID,Fatal))+geom_line(col="red")
+ggarrange(dp,pd, nrow=2, ncol=1)
+
+```
+
+
+Based on these results we can say that, tornadoes caused higher number of injures, however different types of heat events triggered more deaths. 
+
+
+
+## Quesion 2: greatest economic consequences
+
+And again, we need to look for something that describes damage done to property.
+
+```{r}
+names(data)
+```
+
+The variables are "PROPDMG" and "CROPDMG". Make the same steps, as in previous question.
+
+The graph, that shows the most destructive events.
+
+```{r}
+
+x <- data.frame(ID=1:5,CROPDMG=sort(sapply(split(data$CROPDMG, data$EVTYPE), max), decreasing = TRUE)[1:5],
+                PROPDMG=sort(sapply(split(data$PROPDMG, data$EVTYPE), max), decreasing = TRUE)[1:5] )
+dp<-ggplot(data = x, aes(ID,CROPDMG))+geom_line(col="blue")
+pd<-ggplot(data = x, aes(ID,PROPDMG))+geom_line(col="red")
+ggarrange(dp,pd, nrow=2, ncol=1)
+
+```
+
+```{r}
+sort(sapply(split(data$PROPDMG, data$EVTYPE), max), decreasing = TRUE)[1:5]
+sort(sapply(split(data$CROPDMG, data$EVTYPE), max), decreasing = TRUE)[1:5]
+```
+
+[1]: https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf
+[2]: https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf
+[3]: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2
